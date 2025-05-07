@@ -38,6 +38,9 @@ export default function ScanPage() {
     let scannerInstance: any;
 
     import('html5-qrcode').then(({ Html5Qrcode }) => {
+      const container = document.getElementById('reader');
+      if (container) container.innerHTML = '';
+
       if (!scannerRef.current) {
         scannerInstance = new Html5Qrcode('reader');
         scannerRef.current = scannerInstance;
@@ -46,7 +49,7 @@ export default function ScanPage() {
           .start(
             { facingMode: 'environment' },
             { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText:string) => handleResult(decodedText),
+            (decodedText: string) => handleResult(decodedText),
             () => {}
           )
           .catch((err: any) => {
@@ -61,13 +64,30 @@ export default function ScanPage() {
           .stop()
           .then(() => {
             scannerRef.current.clear();
-            document.getElementById('reader')!.innerHTML = ''; // Xóa DOM thừa
+            const container = document.getElementById('reader');
+            if (container) container.innerHTML = '';
             scannerRef.current = null;
           })
           .catch(() => {});
       }
     };
   }, []);
+
+  const handleUpdate = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/item/${item._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      alert(data.message || 'Đã cập nhật');
+      setItem(data.item || item);
+      setEditing(false);
+    } catch (err) {
+      alert('Cập nhật thất bại');
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -80,16 +100,102 @@ export default function ScanPage() {
 
       {item && (
         <div className="bg-white rounded shadow p-4 space-y-3">
-          <h3 className="text-lg font-bold">{item.name}</h3>
-          <p><strong>Mô tả:</strong> {item.description}</p>
-          <p><strong>Nguồn:</strong> {item.source}</p>
-          <p><strong>Loại:</strong> {item.category}</p>
-          {item.imageUrl && (
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="h-32 mt-2 rounded object-contain"
-            />
+          {editing ? (
+            <>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Tên sản phẩm"
+                className="w-full border rounded px-3 py-2"
+              />
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Mô tả"
+                className="w-full border rounded px-3 py-2"
+              />
+              <input
+                value={form.source}
+                onChange={(e) => setForm({ ...form, source: e.target.value })}
+                placeholder="Nguồn"
+                className="w-full border rounded px-3 py-2"
+              />
+              <input
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="Loại (thu_vien, qua_tang, vat_pham)"
+                className="w-full border rounded px-3 py-2"
+              />
+
+              {form.imageUrl && (
+                <img
+                  src={form.imageUrl}
+                  alt={form.name}
+                  className="h-32 mt-2 rounded object-contain"
+                />
+              )}
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const formData = new FormData();
+                  formData.append('image', file);
+
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/item/${item._id}/upload-image`, {
+                    method: 'POST',
+                    body: formData,
+                  });
+
+                  const data = await res.json();
+                  if (data.imageUrl) {
+                    setForm({ ...form, imageUrl: data.imageUrl });
+                    alert('Đã cập nhật ảnh');
+                  } else {
+                    alert('Upload ảnh thất bại');
+                  }
+                }}
+                className="mt-2"
+              />
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={handleUpdate}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Lưu
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  className="text-sm underline"
+                >
+                  Huỷ
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-bold">{item.name}</h3>
+              <p><strong>Mô tả:</strong> {item.description}</p>
+              <p><strong>Nguồn:</strong> {item.source}</p>
+              <p><strong>Loại:</strong> {item.category}</p>
+              {item.imageUrl && (
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="h-32 mt-2 rounded object-contain"
+                />
+              )}
+              <button
+                onClick={() => setEditing(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Chỉnh sửa
+              </button>
+            </>
           )}
         </div>
       )}
