@@ -114,6 +114,52 @@ export default function ScanPage() {
                 placeholder="Mô tả"
                 className="w-full border rounded px-3 py-2"
               />
+              <div className="space-y-2">
+  <h4 className="font-medium">Thuộc tính mở rộng</h4>
+  {form.attributes?.map((attr: any, index: number) => (
+    <div key={index} className="flex gap-2">
+      <input
+        className="border px-2 py-1 rounded w-1/2"
+        value={attr.key}
+        onChange={(e) => {
+          const attrs = [...form.attributes];
+          attrs[index].key = e.target.value;
+          setForm({ ...form, attributes: attrs });
+        }}
+        placeholder="Tên thuộc tính"
+      />
+      <input
+        className="border px-2 py-1 rounded w-1/2"
+        value={attr.value}
+        onChange={(e) => {
+          const attrs = [...form.attributes];
+          attrs[index].value = e.target.value;
+          setForm({ ...form, attributes: attrs });
+        }}
+        placeholder="Giá trị"
+      />
+      <button
+        className="text-red-500"
+        onClick={() => {
+          const attrs = [...form.attributes];
+          attrs.splice(index, 1);
+          setForm({ ...form, attributes: attrs });
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  ))}
+  <button
+    className="text-sm text-blue-600 underline"
+    onClick={() => {
+      const newAttrs = [...(form.attributes || []), { key: "", value: "" }];
+      setForm({ ...form, attributes: newAttrs });
+    }}
+  >
+    + Thêm thuộc tính
+  </button>
+</div>
               <input
                 value={form.source}
                 onChange={(e) => setForm({ ...form, source: e.target.value })}
