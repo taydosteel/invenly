@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 
 export default function ManageItemsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -19,7 +22,7 @@ export default function ManageItemsPage() {
       window.location.href = '/login';
       return;
     }
-    
+
     fetchItems();
   }, []);
 
@@ -37,9 +40,39 @@ export default function ManageItemsPage() {
     }
   };
 
+
+  const handleExportExcel = () => {
+    const data = items.map((item) => ({
+      Tên: item.name,
+      Mã: item.code,
+      Loại: item.category,
+      MôTả: item.description,
+      Nguồn: item.source,
+      QuảnLý: item.manager,
+      ...Object.fromEntries((item.attributes || []).map((a: any) => [a.key, a.value])),
+    }));
+  
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Items');
+  
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(file, 'danh_sach_vat_pham.xlsx');
+  };
+  
+
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-3xl font-bold">📦 Quản lý vật phẩm</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold">📦 Quản lý vật phẩm</h2>
+        <button
+          onClick={handleExportExcel}
+          className="bg-green-600 text-white px-4 py-2 rounded text-sm"
+        >
+          📤 Xuất Excel
+        </button>
+      </div>
 
       <div className="border border-gray-200 rounded-lg p-4 space-y-4 bg-gray-50">
         <h3 className="text-lg font-semibold">
