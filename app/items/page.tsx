@@ -14,24 +14,32 @@ export default function ItemImageUpdater() {
   const handleImageUpdate = async (itemId: string, file: File) => {
     const formData = new FormData();
     formData.append('image', file);
-
+  
     const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/item/${itemId}/upload-image`, {
       method: 'POST',
       body: formData,
     });
-
+  
     const data = await uploadRes.json();
     const imageUrl = data.imageUrl;
-
-    // Update DB with new image URL
+  
+    // Cập nhật DB với URL mới
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/item/${itemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageUrl }),
     });
-
+  
+    // 🟢 Cập nhật ngay trên UI
+    setItems((prev) =>
+      prev.map((item) =>
+        item._id === itemId ? { ...item, imageUrl } : item
+      )
+    );
+  
     alert('Đã cập nhật ảnh');
   };
+  
 
   return (
     <div className="p-6 space-y-4">
