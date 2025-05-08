@@ -4,8 +4,8 @@ import { ReactNode } from 'react'
 import Footer from '@/components/Footer'
 
 export const metadata = {
-  title: 'Tran Huu Dang',
-  description: 'Personal portfolio of Tran Huu Dang',
+  title: 'Phòng đọc sách Thép Tây Đô',
+  description: 'Hệ thống phòng đọc sách Thép Tây Đô',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
