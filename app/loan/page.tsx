@@ -11,8 +11,10 @@ export default function LoanScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ borrowerName: '', returnDueDate: '' });
 
+  const scannedCodesRef = useRef<Set<string>>(new Set());
+
   const handleResult = async (scannedCode: string) => {
-    if (scannedRef.current) return;
+    if (scannedRef.current || scannedCodesRef.current.has(scannedCode)) return;
     scannedRef.current = true;
 
     try {
@@ -20,10 +22,13 @@ export default function LoanScanPage() {
       if (!res.ok) throw new Error('Không tìm thấy vật phẩm');
       const data = await res.json();
 
-      const alreadyScanned = scannedItems.find((item) => item.code === data.code);
-      if (!alreadyScanned) setScannedItems((prev) => [...prev, data]);
-
-      setError(null);
+      if (data.isLoaned) {
+        setError(`❌ Vật phẩm "${data.name}" đã được mượn.`);
+      } else {
+        scannedCodesRef.current.add(scannedCode);
+        setScannedItems((prev) => [...prev, data]);
+        setError(null);
+      }
     } catch (err: any) {
       setError(err.message || 'Lỗi khi quét mã');
     }
@@ -32,6 +37,7 @@ export default function LoanScanPage() {
       scannedRef.current = false;
     }, 3000);
   };
+
 
   useEffect(() => {
     import('html5-qrcode').then(({ Html5Qrcode }) => {
