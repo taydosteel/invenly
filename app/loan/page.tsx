@@ -25,8 +25,7 @@ export default function LoanScanPage() {
   const scannedCodesRef = useRef<Set<string>>(new Set());
 
   const handleResult = async (scannedCode: string) => {
-    if (scannedRef.current || scannedCodesRef.current.has(scannedCode)) return;
-    scannedRef.current = true;
+    if (scannedCodesRef.current.has(scannedCode)) return;
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/item/code/${scannedCode}`);
@@ -51,66 +50,63 @@ export default function LoanScanPage() {
     } catch (err: any) {
       setError(err.message || 'Lỗi khi quét mã');
     }
-
-    setTimeout(() => {
-      scannedRef.current = false;
-    }, 3000);
   };
 
-useEffect(() => {
-  let html5QrCode: any;
-  const containerId = 'scanner-container';
 
-  import('html5-qrcode').then(({ Html5Qrcode }) => {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  useEffect(() => {
+    let html5QrCode: any;
+    const containerId = 'scanner-container';
 
-    // 💥 Clear DOM nếu đã có nội dung (phòng trường hợp bị double-mount)
-    container.innerHTML = '';
+    import('html5-qrcode').then(({ Html5Qrcode }) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
 
-    // 💥 Nếu đã có scanner trước đó thì clear và dừng
-    if (scannerRef.current) {
-  try {
-    scannerRef.current.clear();
-  } catch (e) {
-    console.error('Lỗi khi clear scanner:', e);
-  }
-  scannerRef.current = null;
-}
+      // 💥 Clear DOM nếu đã có nội dung (phòng trường hợp bị double-mount)
+      container.innerHTML = '';
 
-
-    // ✅ Tạo scanner mới
-    html5QrCode = new Html5Qrcode(containerId);
-    scannerRef.current = html5QrCode;
-
-    html5QrCode
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText: string) => handleResult(decodedText),
-        () => {}
-      )
-      .catch((err: any) => {
-        console.error('🚫 Không thể mở camera:', err);
-      });
-  });
-
-  return () => {
-    if (scannerRef.current) {
-      scannerRef.current
-        .stop()
-        .then(() => {
+      // 💥 Nếu đã có scanner trước đó thì clear và dừng
+      if (scannerRef.current) {
+        try {
           scannerRef.current.clear();
-          const container = document.getElementById('scanner-container');
-          if (container) container.innerHTML = '';
-          scannerRef.current = null;
-        })
+        } catch (e) {
+          console.error('Lỗi khi clear scanner:', e);
+        }
+        scannerRef.current = null;
+      }
+
+
+      // ✅ Tạo scanner mới
+      html5QrCode = new Html5Qrcode(containerId);
+      scannerRef.current = html5QrCode;
+
+      html5QrCode
+        .start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText: string) => handleResult(decodedText),
+          () => { }
+        )
         .catch((err: any) => {
-          console.error('❌ Lỗi khi dừng camera:', err);
+          console.error('🚫 Không thể mở camera:', err);
         });
-    }
-  };
-}, []);
+    });
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current
+          .stop()
+          .then(() => {
+            scannerRef.current.clear();
+            const container = document.getElementById('scanner-container');
+            if (container) container.innerHTML = '';
+            scannerRef.current = null;
+          })
+          .catch((err: any) => {
+            console.error('❌ Lỗi khi dừng camera:', err);
+          });
+      }
+    };
+  }, []);
 
 
 
