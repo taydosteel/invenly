@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { login } from '@/lib/api';
+import { runPostLoginCallback } from '@/lib/postLoginManager';
 
 export default function LoginPage() {
-    const router = useRouter();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,43 +25,19 @@ export default function LoginPage() {
     if (data?.user?.token) {
       localStorage.setItem('invenly_token', data.user.token);
 
-      const pending = localStorage.getItem('pendingLoanRequest');
-      if (pending) {
-        const payload = JSON.parse(pending);
-
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/loan/batch`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${data.user.token}`,
-            },
-            body: JSON.stringify(payload),
-          });
-
-          const result = await res.json();
-
-          if (res.ok) {
-            alert(`✅ Gửi lại thành công: ${result.success} vật phẩm\n❌ Thất bại: ${result.failed.join(', ')}`);
-          } else {
-            alert(`❌ Gửi lại thất bại: ${result.error || 'Lỗi không xác định'}`);
-          }
-
-          localStorage.removeItem('pendingLoanRequest');
-          router.push('/loan'); // hoặc quay về /scan
-          return;
-        } catch (err) {
-          alert('❌ Lỗi khi gửi lại yêu cầu mượn');
-          // vẫn tiếp tục login
-        }
+      const redirect = localStorage.getItem('redirectAfterLogin');
+      if (redirect) {
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirect);
+      } else {
+        router.push('/dashboard');
       }
 
-      // Không có pending loan → login bình thường
-      router.push('/dashboard');
-    } else {
-      setError(data.message || 'Đăng nhập thất bại');
+      return;
     }
 
+
+    setError(data.message || 'Đăng nhập thất bại');
     setLoading(false);
   };
 
